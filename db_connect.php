@@ -47,9 +47,27 @@ try {
         `file_akte` VARCHAR(255) NOT NULL,
         `file_foto` VARCHAR(255) NOT NULL,
         `status` ENUM('Pending', 'Verified', 'Rejected') DEFAULT 'Pending',
+        `token` VARCHAR(64) UNIQUE NULL,
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
     $pdo->exec($sqlSantri);
+
+    // Tambahkan kolom token jika belum ada (migrasi otomatis)
+    $checkToken = $pdo->query("SHOW COLUMNS FROM `santri` LIKE 'token'");
+    if (!$checkToken->fetch()) {
+        $pdo->exec("ALTER TABLE `santri` ADD COLUMN `token` VARCHAR(64) NULL UNIQUE AFTER `status`");
+        
+        // Isi token untuk data lama jika ada
+        $stmt = $pdo->query("SELECT id FROM `santri` WHERE `token` IS NULL");
+        $oldRecords = $stmt->fetchAll();
+        if ($oldRecords) {
+            $updateStmt = $pdo->prepare("UPDATE `santri` SET `token` = :token WHERE id = :id");
+            foreach ($oldRecords as $row) {
+                $uniqueToken = bin2hex(random_bytes(16));
+                $updateStmt->execute(['token' => $uniqueToken, 'id' => $row['id']]);
+            }
+        }
+    }
 
     // 5. Buat Tabel `settings` jika belum ada
     $sqlSettings = "CREATE TABLE IF NOT EXISTS `settings` (

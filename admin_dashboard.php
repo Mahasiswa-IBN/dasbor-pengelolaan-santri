@@ -26,12 +26,25 @@ try {
     $stmtMurni = $pdo->query("SELECT COUNT(*) FROM `santri` WHERE `instansi` = 'Murni Pondok'");
     $statMurni = $stmtMurni->fetchColumn();
 
-    // 2. Ambil seluruh data santri untuk tabel
-    $stmtSantri = $pdo->query("SELECT `id`, `nama_lengkap`, `instansi`, `no_hp`, `status`, `created_at` FROM `santri` ORDER BY `created_at` DESC");
+    // Ambil nama pondok dari settings
+    $settings = getSettings($pdo);
+    $namaPondok = $settings['nama_pondok'] ?? 'Pondok Pesantren Al-Barokah';
+
+    // 2. Ambil seluruh data santri untuk tabel (termasuk token, no_hp_ortu, & nama_ortu)
+    $stmtSantri = $pdo->query("SELECT `id`, `nama_lengkap`, `instansi`, `no_hp`, `status`, `created_at`, `token`, `no_hp_ortu`, `nama_ortu` FROM `santri` ORDER BY `created_at` DESC");
     $listSantri = $stmtSantri->fetchAll();
 
 } catch (PDOException $e) {
     die("Gagal mengambil data dari database: " . $e->getMessage());
+}
+
+// Helper untuk format nomor telepon lokal ke format internasional WhatsApp (62)
+function formatWhatsAppNumber($number) {
+    $number = preg_replace('/[^0-9]/', '', $number);
+    if (strpos($number, '0') === 0) {
+        $number = '62' . substr($number, 1);
+    }
+    return $number;
 }
 ?>
 <!DOCTYPE html>
@@ -71,13 +84,8 @@ try {
                     </a>
                 </li>
                 <li>
-                    <a href="index.php" target="_blank" class="sidebar-link">
-                        <i class="fa-solid fa-globe"></i> Lihat Website
-                    </a>
-                </li>
-                <li>
-                    <a href="register.php" target="_blank" class="sidebar-link">
-                        <i class="fa-solid fa-user-plus"></i> Form Pendaftaran
+                    <a href="admin_settings.php" class="sidebar-link">
+                        <i class="fa-solid fa-gear"></i> Pengaturan
                     </a>
                 </li>
                 <li>
@@ -154,10 +162,15 @@ try {
                         <button class="filter-tab" data-filter="Murni Pondok">Murni Pondok</button>
                     </div>
 
-                    <!-- Search Input -->
-                    <div class="search-wrapper">
-                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Cari nama santri...">
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                        <!-- Unduh Laporan Button -->
+                        <a href="export_csv.php" class="btn-primary" style="background: var(--gold); color: var(--bg-dark); font-weight: 600; padding: 9px 16px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; font-size: 0.85rem; border: none; cursor: pointer; transition: var(--transition);"><i class="fa-solid fa-file-csv" style="font-size: 1.1rem;"></i> Unduh Laporan</a>
+                        
+                        <!-- Search Input -->
+                        <div class="search-wrapper">
+                            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                            <input type="text" id="searchInput" class="search-input" placeholder="Cari nama santri...">
+                        </div>
                     </div>
                 </div>
 
@@ -189,6 +202,18 @@ try {
                                 foreach ($listSantri as $row): 
                                     $statusClass = strtolower($row['status']);
                                     $instansiClean = strtolower(str_replace(' ', '', $row['instansi']));
+                                    
+                                    // Generate URL Bukti Pendaftaran Unik
+                                    $baseUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http") . "://$_SERVER[HTTP_HOST]" . str_replace('admin_dashboard.php', '', $_SERVER['SCRIPT_NAME']);
+                                    $uniqueLink = $baseUrl . "submit_registration.php?token=" . $row['token'];
+                                    
+                                    // Pesan untuk orang tua
+                                    $msgOrtu = "Assalamu'alaikum Wr. Wb. Yth. Orang Tua/Wali dari " . $row['nama_lengkap'] . ",\n\nBerikut adalah tautan bukti pendaftaran online PPDB " . $namaPondok . " putra/putri Anda:\n" . $uniqueLink . "\n\nSilakan simpan tautan di atas untuk mencetak kartu pendaftaran dan memantau status verifikasi berkas secara berkala.\n\nTerima kasih.\n*Panitia PPDB " . $namaPondok . "*";
+                                    $waUrlOrtu = "https://wa.me/" . formatWhatsAppNumber($row['no_hp_ortu']) . "?text=" . urlencode($msgOrtu);
+                                    
+                                    // Pesan untuk calon santri
+                                    $msgSantri = "Assalamu'alaikum Wr. Wb. Yth. " . $row['nama_lengkap'] . ",\n\nBerikut adalah tautan bukti pendaftaran online PPDB " . $namaPondok . " Anda:\n" . $uniqueLink . "\n\nSilakan simpan tautan di atas untuk mencetak kartu pendaftaran dan memantau status verifikasi berkas secara berkala.\n\nTerima kasih.\n*Panitia PPDB " . $namaPondok . "*";
+                                    $waUrlSantri = "https://wa.me/" . formatWhatsAppNumber($row['no_hp']) . "?text=" . urlencode($msgSantri);
                                 ?>
                                     <tr class="santri-row" data-instansi="<?php echo $row['instansi']; ?>" data-nama="<?php echo strtolower($row['nama_lengkap']); ?>">
                                         <td style="text-align: center;" class="row-number"><?php echo $no++; ?></td>
@@ -212,6 +237,21 @@ try {
                                                     <i class="fa-regular fa-eye"></i>
                                                 </button>
                                                 
+                                                <!-- Cetak Bukti Button -->
+                                                <a href="submit_registration.php?token=<?php echo $row['token']; ?>" target="_blank" class="btn-action view" title="Cetak Bukti Pendaftaran" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                                                    <i class="fa-solid fa-print"></i>
+                                                </a>
+                                                
+                                                <!-- WA Orang Tua -->
+                                                <a href="<?php echo $waUrlOrtu; ?>" target="_blank" class="btn-action approve" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Kirim WA ke Orang Tua">
+                                                    <i class="fa-brands fa-whatsapp"></i><span style="font-size: 0.65rem; margin-left: 2px; font-weight: bold;">O</span>
+                                                </a>
+
+                                                <!-- WA Santri -->
+                                                <a href="<?php echo $waUrlSantri; ?>" target="_blank" class="btn-action approve" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Kirim WA ke Santri">
+                                                    <i class="fa-brands fa-whatsapp"></i><span style="font-size: 0.65rem; margin-left: 2px; font-weight: bold;">S</span>
+                                                </a>
+
                                                 <!-- Quick Verify Button -->
                                                 <button type="button" class="btn-action approve" data-id="<?php echo $row['id']; ?>" title="Verifikasi Pendaftaran">
                                                     <i class="fa-solid fa-check"></i>

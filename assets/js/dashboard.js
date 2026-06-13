@@ -149,6 +149,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 modalVerifyBtn.style.display = 'inline-flex';
                 modalRejectBtn.style.display = 'inline-flex';
                 
+                // Helper format nomor WA
+                const formatJSWhatsAppNumber = (num) => {
+                    if (!num) return '';
+                    let clean = num.replace(/[^0-9]/g, '');
+                    if (clean.startsWith('0')) {
+                        clean = '62' + clean.slice(1);
+                    }
+                    return clean;
+                };
+
+                // Helper pesan WA
+                const getWAMessage = (nama, link, namaOrtu = '') => {
+                    const salam = namaOrtu ? `Yth. Orang Tua/Wali dari ${nama}` : `Yth. ${nama}`;
+                    return `Assalamu'alaikum Wr. Wb. ${salam},\n\nBerikut adalah tautan bukti pendaftaran online PPDB Pondok Pesantren Al-Barokah:\n${link}\n\nSilakan simpan tautan di atas untuk mencetak kartu pendaftaran dan memantau status verifikasi berkas secara berkala.\n\nTerima kasih.\n*Panitia PPDB Pondok Pesantren Al-Barokah*`;
+                };
+
+                // Hitung link unik pendaftaran untuk santri ini
+                const uniqueLink = window.location.origin + window.location.pathname.replace('admin_dashboard.php', '') + 'submit_registration.php?token=' + s.token;
+
                 // Template HTML detail santri
                 modalBody.innerHTML = `
                     <div class="detail-grid">
@@ -201,6 +220,25 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <tr>
                                     <td>Tanggal Daftar</td>
                                     <td>: ${s.created_at_formatted} WIB</td>
+                                </tr>
+                                <tr>
+                                    <td>Tautan Unik Santri</td>
+                                    <td>: 
+                                        <div style="display: flex; gap: 5px; align-items: center; width: 100%;">
+                                            <input type="text" value="${uniqueLink}" readonly onclick="this.select();" style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-glass); color: var(--text-white); padding: 5px 8px; border-radius: 6px; font-size: 0.8rem; flex-grow: 1; max-width: 250px;">
+                                            <button type="button" onclick="navigator.clipboard.writeText('${uniqueLink}'); alert('Link unik pendaftaran berhasil disalin ke clipboard!');" style="background: var(--gold); border: none; color: var(--bg-dark); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-regular fa-copy"></i> Salin</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Aksi Laporan & WA</td>
+                                    <td>: 
+                                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                                            <a href="submit_registration.php?token=${s.token}" target="_blank" style="background: var(--gold); color: var(--bg-dark); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"><i class="fa-solid fa-print"></i> Cetak Bukti</a>
+                                            <a href="https://wa.me/${formatJSWhatsAppNumber(s.no_hp_ortu)}?text=${encodeURIComponent(getWAMessage(s.nama_lengkap, uniqueLink, s.nama_ortu))}" target="_blank" style="background: #2ecc71; color: var(--bg-dark); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> WA Orang Tua</a>
+                                            <a href="https://wa.me/${formatJSWhatsAppNumber(s.no_hp)}?text=${encodeURIComponent(getWAMessage(s.nama_lengkap, uniqueLink))}" target="_blank" style="background: #2ecc71; color: var(--bg-dark); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; text-decoration: none;"><i class="fa-brands fa-whatsapp"></i> WA Santri</a>
+                                        </div>
+                                    </td>
                                 </tr>
                             </table>
                         </div>
