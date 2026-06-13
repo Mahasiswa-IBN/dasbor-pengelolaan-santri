@@ -258,6 +258,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="doc-link-icon" style="color: #2ecc71;"><i class="fa-regular fa-file-pdf"></i></div>
                             <span class="doc-link-name">Akta Kelahiran</span>
                         </a>
+                        <!-- Bukti Pembayaran (jika ada) -->
+                        ${s.file_bukti ? `
+                        <a href="uploads/payment/${s.file_bukti}" target="_blank" class="doc-link-card">
+                            <div class="doc-link-icon" style="color: #f39c12;"><i class="fa-solid fa-receipt"></i></div>
+                            <span class="doc-link-name">Bukti Pembayaran</span>
+                        </a>
+                        ` : ''}
                     </div>
                 `;
             } else {

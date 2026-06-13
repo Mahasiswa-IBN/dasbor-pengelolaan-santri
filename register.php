@@ -1,8 +1,15 @@
 <?php
+$sessionStarted = false;
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+    $sessionStarted = true;
+}
 require_once 'db_connect.php';
 $settings = getSettings($pdo);
 $namaPondok = $settings['nama_pondok'] ?? 'Pondok Pesantren Al-Barokah';
 $logoPath = 'uploads/settings/' . ($settings['logo_path'] ?? 'logo.png');
+// Nomor rekening/administrasi (bisa dikonfigurasi lewat tabel `settings` dengan key `rekening_admin`)
+$rekeningAdmin = $settings['rekening_admin'] ?? "Bank BRI - 1234567890 a.n. Pondok Pesantren Al-Barokah";
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -36,6 +43,9 @@ $logoPath = 'uploads/settings/' . ($settings['logo_path'] ?? 'logo.png');
                 <li><a href="index.php#instansi">Instansi</a></li>
                 <li><a href="index.php#statistik">Statistik</a></li>
                 <li><a href="login.php" class="btn-nav"><i class="fa-solid fa-lock-open"></i> Login Admin</a></li>
+                <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
+                    <li><a href="admin_settings.php" class="btn-nav"><i class="fa-solid fa-gear"></i> Edit Situs</a></li>
+                <?php endif; ?>
             </ul>
         </div>
     </nav>
@@ -192,6 +202,22 @@ $logoPath = 'uploads/settings/' . ($settings['logo_path'] ?? 'logo.png');
                             <div class="file-upload-text">Pilih file Akta atau seret ke sini</div>
                             <div class="file-upload-info">PDF, JPG, PNG (Maks 2MB)</div>
                             <input type="file" name="file_akte" accept=".pdf, .jpg, .jpeg, .png" required>
+                        </div>
+                    </div>
+
+                    <!-- PEMBAYARAN PENDAFTARAN -->
+                    <div class="form-group full-width" style="margin-top: 10px;">
+                        <label><i class="fa-solid fa-credit-card"></i> Pembayaran Pendaftaran</label>
+                        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); padding: 12px; border-radius: 8px; margin-bottom: 8px; color: var(--text-muted);">
+                            <strong style="color: var(--text-white);">Nomor Rekening Admin:</strong>
+                            <div style="margin-top:6px; font-weight:600; color: var(--gold);"><?php echo htmlspecialchars($rekeningAdmin); ?></div>
+                            <div style="margin-top:8px; font-size:0.9rem;">Silakan transfer biaya pendaftaran sesuai ketentuan, lalu unggah bukti pembayaran di bawah ini.</div>
+                        </div>
+                        <div class="file-upload-wrapper" id="upload-bukti">
+                            <i class="fa-solid fa-file-invoice file-upload-icon"></i>
+                            <div class="file-upload-text">Pilih file Bukti Pembayaran atau seret ke sini</div>
+                            <div class="file-upload-info">PDF, JPG, PNG (Maks 2MB)</div>
+                            <input type="file" name="file_bukti_bayar" accept=".pdf, .jpg, .jpeg, .png" required>
                         </div>
                     </div>
                 </div>

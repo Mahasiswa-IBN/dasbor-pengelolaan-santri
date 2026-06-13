@@ -30,8 +30,8 @@ try {
     $settings = getSettings($pdo);
     $namaPondok = $settings['nama_pondok'] ?? 'Pondok Pesantren Al-Barokah';
 
-    // 2. Ambil seluruh data santri untuk tabel (termasuk token, no_hp_ortu, & nama_ortu)
-    $stmtSantri = $pdo->query("SELECT `id`, `nama_lengkap`, `instansi`, `no_hp`, `status`, `created_at`, `token`, `no_hp_ortu`, `nama_ortu` FROM `santri` ORDER BY `created_at` DESC");
+    // 2. Ambil seluruh data santri untuk tabel (termasuk token, no_hp_ortu, nama_ortu, dan file_bukti)
+    $stmtSantri = $pdo->query("SELECT `id`, `nama_lengkap`, `instansi`, `no_hp`, `status`, `created_at`, `token`, `no_hp_ortu`, `nama_ortu`, `file_bukti` FROM `santri` ORDER BY `created_at` DESC");
     $listSantri = $stmtSantri->fetchAll();
 
 } catch (PDOException $e) {
@@ -241,6 +241,12 @@ function formatWhatsAppNumber($number) {
                                                 <a href="submit_registration.php?token=<?php echo $row['token']; ?>" target="_blank" class="btn-action view" title="Cetak Bukti Pendaftaran" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
                                                     <i class="fa-solid fa-print"></i>
                                                 </a>
+                                                <!-- Cetak / Lihat Bukti Pembayaran (jika ada) -->
+                                                <?php if (!empty($row['file_bukti'])): ?>
+                                                    <a href="uploads/payment/<?php echo htmlspecialchars($row['file_bukti']); ?>" target="_blank" class="btn-action view" title="Lihat / Cetak Bukti Pembayaran" style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                                                        <i class="fa-solid fa-receipt"></i>
+                                                    </a>
+                                                <?php endif; ?>
                                                 
                                                 <!-- WA Orang Tua -->
                                                 <a href="<?php echo $waUrlOrtu; ?>" target="_blank" class="btn-action approve" style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; display: inline-flex; align-items: center; justify-content: center; text-decoration: none;" title="Kirim WA ke Orang Tua">

@@ -54,8 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Buat nama unik baru
             $newFilename = time() . '_' . uniqid() . '.' . $ext;
-            $destPath = $destFolder . $newFilename;
-            
+            // Pastikan folder tujuan ada
+            if (!is_dir($destFolder)) {
+                if (!mkdir($destFolder, 0755, true)) {
+                    throw new Exception("Gagal membuat folder tujuan untuk menyimpan berkas.");
+                }
+            }
+
+            $destPath = rtrim($destFolder, '/\\') . DIRECTORY_SEPARATOR . $newFilename;
+
             if (!move_uploaded_file($tmpName, $destPath)) {
                 throw new Exception("Gagal menyimpan berkas di server.");
             }
@@ -71,13 +78,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $file_skl = uploadDokumen('file_skl', 'uploads/skl/', $allowedDocs);
         $file_kk = uploadDokumen('file_kk', 'uploads/kk/', $allowedDocs);
         $file_akte = uploadDokumen('file_akte', 'uploads/akte/', $allowedDocs);
+        // Upload bukti pembayaran (baru)
+        $file_bukti = uploadDokumen('file_bukti_bayar', 'uploads/payment/', $allowedDocs);
 
         // 4. Simpan ke Database
         $token = bin2hex(random_bytes(16));
         $sql = "INSERT INTO `santri` 
-                (`nama_lengkap`, `nama_panggilan`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `alamat`, `no_hp`, `instansi`, `sekolah_asal`, `nama_ortu`, `no_hp_ortu`, `file_skl`, `file_kk`, `file_akte`, `file_foto`, `status`, `token`) 
-                VALUES 
-                (:nama_lengkap, :nama_panggilan, :jenis_kelamin, :tempat_lahir, :tanggal_lahir, :alamat, :no_hp, :instansi, :sekolah_asal, :nama_ortu, :no_hp_ortu, :file_skl, :file_kk, :file_akte, :file_foto, 'Pending', :token)";
+            (`nama_lengkap`, `nama_panggilan`, `jenis_kelamin`, `tempat_lahir`, `tanggal_lahir`, `alamat`, `no_hp`, `instansi`, `sekolah_asal`, `nama_ortu`, `no_hp_ortu`, `file_skl`, `file_kk`, `file_akte`, `file_foto`, `file_bukti`, `status`, `token`) 
+            VALUES 
+            (:nama_lengkap, :nama_panggilan, :jenis_kelamin, :tempat_lahir, :tanggal_lahir, :alamat, :no_hp, :instansi, :sekolah_asal, :nama_ortu, :no_hp_ortu, :file_skl, :file_kk, :file_akte, :file_foto, :file_bukti, 'Pending', :token)";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -96,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'file_kk' => $file_kk,
             'file_akte' => $file_akte,
             'file_foto' => $file_foto,
+            'file_bukti' => $file_bukti,
             'token' => $token
         ]);
 
@@ -285,7 +295,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                     <button onclick="window.print()" class="btn-primary" style="background: var(--gold); color: var(--bg-dark); font-weight: 600; cursor: pointer;"><i class="fa-solid fa-print"></i> Cetak Bukti Pendaftaran</button>
-                    <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $noHpPondok); ?>?text=Assalamu'alaikum,%20saya%20ingin%20mengonfirmasi%20pendaftaran%20santri%20baru%20di%20<?php echo urlencode($namaPondok); ?>%20dengan%20No.%20Registrasi%20<?php echo $successData['reg_no']; ?>" target="_blank" class="btn-primary"><i class="fa-brands fa-whatsapp"></i> Hubungi Admin (Person 3)</a>
+                    <?php $adminContactLabel = !empty($settings['nama_admin_contact']) ? $settings['nama_admin_contact'] : 'Admin'; ?>
+                    <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $noHpPondok); ?>?text=Assalamu'alaikum,%20saya%20ingin%20mengonfirmasi%20pendaftaran%20santri%20baru%20di%20<?php echo urlencode($namaPondok); ?>%20dengan%20No.%20Registrasi%20<?php echo $successData['reg_no']; ?>" target="_blank" class="btn-primary"><i class="fa-brands fa-whatsapp"></i> Hubungi <?php echo htmlspecialchars($adminContactLabel); ?></a>
                     <a href="index.php" class="btn-secondary" style="width: 100%; text-align: center; margin-top: 5px;"><i class="fa-solid fa-house"></i> Halaman Utama</a>
                 </div>
             </div>

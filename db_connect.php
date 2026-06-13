@@ -69,6 +69,12 @@ try {
         }
     }
 
+    // Tambahkan kolom file_bukti jika belum ada (migrasi otomatis untuk menyimpan bukti pembayaran)
+    $checkFileBukti = $pdo->query("SHOW COLUMNS FROM `santri` LIKE 'file_bukti'");
+    if (!$checkFileBukti->fetch()) {
+        $pdo->exec("ALTER TABLE `santri` ADD COLUMN `file_bukti` VARCHAR(255) NULL AFTER `file_foto`");
+    }
+
     // 5. Buat Tabel `settings` jika belum ada
     $sqlSettings = "CREATE TABLE IF NOT EXISTS `settings` (
         `meta_key` VARCHAR(50) PRIMARY KEY,
@@ -114,7 +120,30 @@ try {
             'alamat_pondok' => 'Jl. Pondok Pesantren No. 45, Kecamatan Sukamakmur, Jawa Barat',
             'no_hp_pondok' => '6281234567890',
             'logo_path' => 'logo.png',
-            'gambar_pondok_path' => 'pondok.png'
+            'gambar_pondok_path' => 'pondok.png',
+            'background_beranda_path' => 'pondok.png',
+            'gambar_instansi_path' => 'pondok.png',
+            'foto_pelengkap_1' => 'pondok.png',
+            'foto_pelengkap_2' => 'pondok.png',
+            'rekening_admin' => '',
+            'nama_admin_contact' => '',
+            // Per-instansi logos and images
+            'mts_logo' => '',
+            'smk_logo' => '',
+            'murni_logo' => '',
+            'mts_image' => '',
+            'smk_image' => '',
+            'murni_image' => '',
+            // Gallery slots (up to 6)
+            'gallery_1' => '',
+            'gallery_2' => '',
+            'gallery_3' => '',
+            'gallery_4' => '',
+            'gallery_5' => '',
+            'gallery_6' => '',
+            // Informasi teks yang dapat diedit
+            'info_pendaftaran' => '',
+            'info_beranda' => ''
         ];
 
         $insertSettingStmt = $pdo->prepare("INSERT INTO `settings` (`meta_key`, `meta_value`) VALUES (:meta_key, :meta_value)");

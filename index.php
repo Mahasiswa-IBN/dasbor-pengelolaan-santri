@@ -1,5 +1,6 @@
 <?php
 require_once 'db_connect.php';
+session_start();
 
 // Ambil semua pengaturan dari database
 $settings = getSettings($pdo);
@@ -8,6 +9,18 @@ $alamatPondok = $settings['alamat_pondok'] ?? 'Jl. Pondok Pesantren No. 45, Keca
 $noHpPondok = $settings['no_hp_pondok'] ?? '6281234567890';
 $logoPath = 'uploads/settings/' . ($settings['logo_path'] ?? 'logo.png');
 $gambarPondokPath = 'uploads/settings/' . ($settings['gambar_pondok_path'] ?? 'pondok.png');
+// Per-instansi assets
+$mtsLogo = !empty($settings['mts_logo']) ? 'uploads/settings/' . $settings['mts_logo'] : '';
+$smkLogo = !empty($settings['smk_logo']) ? 'uploads/settings/' . $settings['smk_logo'] : '';
+$murniLogo = !empty($settings['murni_logo']) ? 'uploads/settings/' . $settings['murni_logo'] : '';
+$mtsImage = !empty($settings['mts_image']) ? 'uploads/settings/' . $settings['mts_image'] : '';
+$smkImage = !empty($settings['smk_image']) ? 'uploads/settings/' . $settings['smk_image'] : '';
+$murniImage = !empty($settings['murni_image']) ? 'uploads/settings/' . $settings['murni_image'] : '';
+// Gallery
+$gallery = [];
+for ($i = 1; $i <= 6; $i++) {
+    if (!empty($settings['gallery_' . $i])) $gallery[] = 'uploads/settings/' . $settings['gallery_' . $i];
+}
 
 // Ambil statistik real-time dari database
 try {
@@ -65,12 +78,16 @@ try {
                 <li><a href="#instansi">Instansi Pendidikan</a></li>
                 <li><a href="#statistik">Statistik</a></li>
                 <li><a href="login.php" class="btn-nav"><i class="fa-solid fa-lock-open"></i> Login Admin</a></li>
+                <?php if (isset($_SESSION['admin_logged_in']) && $_SESSION['admin_logged_in'] === true): ?>
+                    <li><a href="admin_settings.php" class="btn-nav" style="background: rgba(255,255,255,0.02);"><i class="fa-solid fa-gear"></i> Edit Situs</a></li>
+                <?php endif; ?>
             </ul>
         </div>
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero" id="home">
+    <?php $backgroundBeranda = 'uploads/settings/' . ($settings['background_beranda_path'] ?? ($settings['gambar_pondok_path'] ?? 'pondok.png')); ?>
+    <section class="hero" id="home" style="background-image: url('<?php echo htmlspecialchars($backgroundBeranda); ?>'); background-size: cover; background-position: center;">
         <div class="container hero-grid">
             <div class="hero-content">
                 <h2>Membentuk Generasi <span>Berakhlak Mulia & Unggul</span></h2>
@@ -94,6 +111,25 @@ try {
             </div>
         </div>
     </section>
+
+    <!-- Gallery Section -->
+    <?php if (!empty($gallery)): ?>
+    <section class="section" id="galeri" style="padding: 30px 0;">
+        <div class="container">
+            <div class="section-title">
+                <p>Galeri</p>
+                <h2>Dokumentasi & Foto Kegiatan</h2>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap:12px;">
+                <?php foreach ($gallery as $img): ?>
+                    <div style="height:160px; overflow:hidden; border-radius:12px; border:1px solid var(--border-glass);">
+                        <img src="<?php echo htmlspecialchars($img); ?>" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- Stats Counter Bar -->
     <section class="stats-bar" id="statistik">
@@ -160,7 +196,10 @@ try {
                 <img src="<?php echo htmlspecialchars($logoPath); ?>" alt="Logo" style="width: 32px; height: 32px; object-fit: contain;">
                 <span style="color: var(--text-light); font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 1.15rem;"><?php echo htmlspecialchars($namaPondok); ?></span>
             </div>
-            <p style="margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto;"><?php echo htmlspecialchars($alamatPondok); ?></p>
+            <p style="margin-bottom: 12px; max-width: 600px; margin-left: auto; margin-right: auto;"><?php echo htmlspecialchars($alamatPondok); ?></p>
+            <?php if (!empty($settings['nama_admin_contact'])): ?>
+                <p style="margin-bottom: 12px; max-width: 600px; margin-left: auto; margin-right: auto; color: var(--text-muted);">Kontak Admin: <?php echo htmlspecialchars($settings['nama_admin_contact']); ?></p>
+            <?php endif; ?>
             <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; font-size: 1.2rem;">
                 <a href="https://wa.me/<?php echo preg_replace('/[^0-9]/', '', $noHpPondok); ?>" target="_blank" style="color: var(--text-muted); transition: var(--transition);"><i class="fa-brands fa-whatsapp hover-gold"></i></a>
                 <a href="#" style="color: var(--text-muted); transition: var(--transition);"><i class="fa-brands fa-facebook hover-gold"></i></a>
